@@ -1,5 +1,10 @@
 {
 	"name": "demo-adf-neu",
+	"properties": {
+		"globalConfigurations": {
+			"PipelineBillingEnabled": "true"
+		}
+	},
 	"location": "northeurope",
 	"identity": {
 		"type": "SystemAssigned",
