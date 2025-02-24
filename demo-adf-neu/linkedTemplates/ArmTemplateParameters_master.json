@@ -1,0 +1,33 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "demo-adf-neu"
+		},
+		"ADLS_LS_accountKey": {
+			"value": ""
+		},
+		"SQL_LS_password": {
+			"value": ""
+		},
+		"ADLS_LS_properties_typeProperties_url": {
+			"value": "https://adlsstgaccdemoneu.dfs.core.windows.net/"
+		},
+		"SQL_LS_properties_typeProperties_server": {
+			"value": "sqlserver-demo-neu.database.windows.net"
+		},
+		"SQL_LS_properties_typeProperties_database": {
+			"value": "demo-db-neu"
+		},
+		"SQL_LS_properties_typeProperties_userName": {
+			"value": "sqlserveradmin"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

@@ -1,0 +1,309 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "demo-adf-neu"
+		},
+		"ADLS_LS_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'ADLS_LS'"
+		},
+		"SQL_LS_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'SQL_LS'"
+		},
+		"ADLS_LS_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://adlsstgaccdemoneu.dfs.core.windows.net/"
+		},
+		"SQL_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "sqlserver-demo-neu.database.windows.net"
+		},
+		"SQL_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "demo-db-neu"
+		},
+		"SQL_LS_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqlserveradmin"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ADLS_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ADLS_LS_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('ADLS_LS_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SQL_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('SQL_LS_properties_typeProperties_server')]",
+					"database": "[parameters('SQL_LS_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('SQL_LS_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('SQL_LS_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SalesAggData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "SQL_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "year_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "month_id",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "totalSales",
+						"type": "decimal",
+						"precision": 18,
+						"scale": 2
+					}
+				],
+				"typeProperties": {
+					"schema": "sales_mart",
+					"table": "SalesAggregate"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/SQL_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/SalesData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ADLS_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "sales_data.csv",
+						"folderPath": "raw-data",
+						"fileSystem": "synapse-datastore"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "ORDERNUMBER",
+						"type": "String"
+					},
+					{
+						"name": "QUANTITYORDERED",
+						"type": "String"
+					},
+					{
+						"name": "PRICEEACH",
+						"type": "String"
+					},
+					{
+						"name": "ORDERLINENUMBER",
+						"type": "String"
+					},
+					{
+						"name": "SALES",
+						"type": "String"
+					},
+					{
+						"name": "ORDERDATE",
+						"type": "String"
+					},
+					{
+						"name": "STATUS",
+						"type": "String"
+					},
+					{
+						"name": "QTR_ID",
+						"type": "String"
+					},
+					{
+						"name": "MONTH_ID",
+						"type": "String"
+					},
+					{
+						"name": "YEAR_ID",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ADLS_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DataFlow_Demo')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "SalesData",
+								"type": "DatasetReference"
+							},
+							"name": "SalesData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "SalesAggData",
+								"type": "DatasetReference"
+							},
+							"name": "SalesAggregatedData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "SalesFilter"
+						},
+						{
+							"name": "AggregatedSalesData"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          ORDERNUMBER as short,",
+						"          QUANTITYORDERED as short,",
+						"          PRICEEACH as double,",
+						"          ORDERLINENUMBER as short,",
+						"          SALES as double,",
+						"          ORDERDATE as timestamp,",
+						"          STATUS as string,",
+						"          QTR_ID as short,",
+						"          MONTH_ID as short,",
+						"          YEAR_ID as short",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> SalesData",
+						"SalesData filter(SALES>=2000) ~> SalesFilter",
+						"SalesFilter aggregate(groupBy(YEAR_ID,",
+						"          MONTH_ID),",
+						"     totalSales = sum(SALES)) ~> AggregatedSalesData",
+						"AggregatedSalesData sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          year_id as integer,",
+						"          month_id as integer,",
+						"          totalSales as decimal(18,2)",
+						"     ),",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     errorHandlingOption: 'stopOnFirstError') ~> SalesAggregatedData"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/SalesData')]",
+				"[concat(variables('factoryId'), '/datasets/SalesAggData')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Sales_Pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Sales_dataflow",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataFlow_Demo",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SalesData": {},
+									"SalesAggregatedData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DataFlow_Demo')]"
+			]
+		}
+	]
+}
