@@ -1,0 +1,33 @@
+{
+	"name": "SalesAggData",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "SQL_LS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "year_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "month_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "totalSales",
+				"type": "decimal",
+				"precision": 18,
+				"scale": 2
+			}
+		],
+		"typeProperties": {
+			"schema": "sales_mart",
+			"table": "SalesAggregate"
+		}
+	}
+}

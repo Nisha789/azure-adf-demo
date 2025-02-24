@@ -1,0 +1,70 @@
+{
+	"name": "DataFlow_Demo",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "SalesData",
+						"type": "DatasetReference"
+					},
+					"name": "SalesData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "SalesAggData",
+						"type": "DatasetReference"
+					},
+					"name": "SalesAggregatedData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "SalesFilter"
+				},
+				{
+					"name": "AggregatedSalesData"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          ORDERNUMBER as short,",
+				"          QUANTITYORDERED as short,",
+				"          PRICEEACH as double,",
+				"          ORDERLINENUMBER as short,",
+				"          SALES as double,",
+				"          ORDERDATE as timestamp,",
+				"          STATUS as string,",
+				"          QTR_ID as short,",
+				"          MONTH_ID as short,",
+				"          YEAR_ID as short",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> SalesData",
+				"SalesData filter(SALES>=2000) ~> SalesFilter",
+				"SalesFilter aggregate(groupBy(YEAR_ID,",
+				"          MONTH_ID),",
+				"     totalSales = sum(SALES)) ~> AggregatedSalesData",
+				"AggregatedSalesData sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          year_id as integer,",
+				"          month_id as integer,",
+				"          totalSales as decimal(18,2)",
+				"     ),",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError') ~> SalesAggregatedData"
+			]
+		}
+	}
+}
